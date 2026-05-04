@@ -20,15 +20,16 @@ import (
 )
 
 type Api struct {
-	androidAPIVersion int64
-	model             string
-	make              string
-	clientVersionCode int64
-	userAgent         string
-	language          string
-	authData          string
-	client            *http.Client
-	authResponseCache map[string]string
+	androidAPIVersion  int64
+	model              string
+	make               string
+	clientVersionCode  int64
+	userAgent          string
+	language           string
+	authData           string
+	client             *http.Client
+	authResponseCache  map[string]string
+	bearerTokenOverride string
 }
 
 type AuthResponse struct {
@@ -84,10 +85,18 @@ func NewApi() (*Api, error) {
 		api.model,
 	)
 
+	if token := os.Getenv("GOTOHP_BEARER_TOKEN"); token != "" {
+		api.bearerTokenOverride = strings.TrimSpace(token)
+	}
+
 	return api, nil
 }
 
 func (a *Api) BearerToken() (string, error) {
+	if a.bearerTokenOverride != "" {
+		return a.bearerTokenOverride, nil
+	}
+
 	expiryStr := a.authResponseCache["Expiry"]
 	expiry, err := strconv.ParseInt(expiryStr, 10, 64)
 	if err != nil {
