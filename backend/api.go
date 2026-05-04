@@ -115,21 +115,13 @@ func (a *Api) getAuthToken() (map[string]string, error) {
 		return nil, fmt.Errorf("failed to parse auth data: %w", err)
 	}
 
-	authRequestData := url.Values{
-		"androidId":                    {authDataValues.Get("androidId")},
-		"app":                          {"com.google.android.apps.photos"},
-		"client_sig":                   {authDataValues.Get("client_sig")},
-		"callerPkg":                    {"com.google.android.apps.photos"},
-		"callerSig":                    {authDataValues.Get("callerSig")},
-		"device_country":               {authDataValues.Get("device_country")},
-		"Email":                        {authDataValues.Get("Email")},
-		"google_play_services_version": {authDataValues.Get("google_play_services_version")},
-		"lang":                         {authDataValues.Get("lang")},
-		"oauth2_foreground":            {authDataValues.Get("oauth2_foreground")},
-		"sdk_version":                  {authDataValues.Get("sdk_version")},
-		"service":                      {authDataValues.Get("service")},
-		"Token":                        {authDataValues.Get("Token")},
+	authRequestData := url.Values{}
+	for k, v := range authDataValues {
+		authRequestData[k] = v
 	}
+	authRequestData.Set("app", "com.google.android.apps.photos")
+	authRequestData.Set("callerPkg", "com.google.android.apps.photos")
+	authRequestData.Del("has_permission")
 
 	headers := map[string]string{
 		"Accept-Encoding": "gzip",
@@ -192,10 +184,15 @@ func (a *Api) getAuthToken() (map[string]string, error) {
 		}
 	}
 
-	// Validate we got the required fields
-	if parsedAuthResponse["Auth"] == "" {
-		return nil, errors.New("auth response missing Auth token")
+	// Accept both legacy Auth= and new it= (encrypted) token formats
+	token := parsedAuthResponse["Auth"]
+	if token == "" {
+		token = parsedAuthResponse["it"]
 	}
+	if token == "" {
+		return nil, errors.New("auth response missing Auth or it token")
+	}
+	parsedAuthResponse["Auth"] = token
 	if parsedAuthResponse["Expiry"] == "" {
 		return nil, errors.New("auth response missing Expiry")
 	}
