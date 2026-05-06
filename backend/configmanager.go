@@ -227,6 +227,10 @@ func (g *ConfigManager) RemoveCredentials(email string) error {
 }
 
 func determineConfigPath() {
+	if ConfigPath != "" {
+		return
+	}
+
 	// First try portable config in executable directory
 	exePath, err := os.Executable()
 	if err == nil {
@@ -265,7 +269,14 @@ func (g *ConfigManager) GetConfig() Config {
 func LoadConfig() error {
 	determineConfigPath()
 
-	file, _ := os.ReadFile(ConfigPath)
+	file, err := os.ReadFile(ConfigPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			AppConfig = DefaultConfig
+			return nil
+		}
+		return fmt.Errorf("failed to read config %s: %w", ConfigPath, err)
+	}
 	if len(file) == 0 {
 		AppConfig = DefaultConfig
 	} else {
