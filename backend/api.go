@@ -131,6 +131,7 @@ func (a *Api) getAuthToken() (map[string]string, error) {
 	authRequestData.Set("app", "com.google.android.apps.photos")
 	authRequestData.Set("callerPkg", "com.google.android.apps.photos")
 	authRequestData.Del("has_permission")
+	authRequestData.Del("it_caveat_types")
 
 	headers := map[string]string{
 		"Accept-Encoding": "gzip",
